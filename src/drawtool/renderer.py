@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from drawtool.defaults import TextDefaults
 
@@ -173,6 +173,7 @@ class FigureRenderer:
         anchor_v = font_cfg.get("anchor_v", TextDefaults.ANCHOR_VERTICAL)
         anchor_h = font_cfg.get("anchor_h", TextDefaults.ANCHOR_HORIZONTAL)
         rotation = float(font_cfg.get("rotation", TextDefaults.ROTATION))
+        glow_cfg = font_cfg.get("glow", None) if isinstance(font_cfg.get("glow", {}), dict) else None
 
         # Convert color to RGBA format with alpha
         rgba_color = self._color_with_alpha(color, alpha)
@@ -185,15 +186,20 @@ class FigureRenderer:
         anchor_map_h = {"left": "l", "center": "m", "right": "r"}
         anchor_str = anchor_map_h[anchor_h] + anchor_map_v[anchor_v]
 
-        # If alpha is not fully opaque or rotation is used, render to temp image first
-        needs_compositing = alpha < 255 or rotation != 0
+        # If alpha is not fully opaque, rotation is used, or glow is enabled, render to temp image first
+        needs_compositing = alpha < 255 or rotation != 0 or glow_cfg is not None
 
         # For multi-line text, handle alignment
         if "\n" in text:
             # Multi-line text with alignment
             if needs_compositing:
-                # Render to a separate image first for alpha or rotation
+                # Render to a separate image first for alpha, rotation, or glow
                 temp_img = self._render_text_to_image(text, font, rgba_color, align)
+                
+                # Apply glow effect if specified
+                if glow_cfg:
+                    temp_img = self._apply_glow(temp_img, glow_cfg)
+                
                 if rotation != 0:
                     temp_img = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
                 
@@ -206,8 +212,13 @@ class FigureRenderer:
         else:
             # Single-line text
             if needs_compositing:
-                # Render to a separate image first for alpha or rotation
+                # Render to a separate image first for alpha, rotation, or glow
                 temp_img = self._render_text_to_image(text, font, rgba_color, "left")
+                
+                # Apply glow effect if specified
+                if glow_cfg:
+                    temp_img = self._apply_glow(temp_img, glow_cfg)
+                
                 if rotation != 0:
                     temp_img = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
                 
@@ -247,6 +258,50 @@ class FigureRenderer:
         
         # Crop to actual text size
         return temp_img.crop((padding, padding, padding + text_width, padding + text_height))
+
+    def _apply_glow(self, text_img: Image.Image, glow_cfg: Dict[str, Any]) -> Image.Image:
+        """Apply glow effect to text image."""
+        glow_color = glow_cfg.get("color", "#FFFFFF")
+        glow_radius = int(glow_cfg.get("radius", 10))
+        glow_alpha = int(glow_cfg.get("alpha", 200))
+        
+        # Create a larger canvas to accommodate the glow
+        margin = glow_radius * 3
+        glow_width = text_img.width + margin * 2
+        glow_height = text_img.height + margin * 2
+        
+        # Extract text alpha channel
+        text_alpha = text_img.split()[3]
+        
+        # Create a grayscale mask from text alpha for blurring
+        alpha_mask = Image.new("L", (glow_width, glow_height), 0)
+        alpha_mask.paste(text_alpha, (margin, margin))
+        
+        # Apply Gaussian blur to create glow effect
+        blurred_mask = alpha_mask.filter(ImageFilter.GaussianBlur(radius=glow_radius))
+        
+        # Create glow layer with the blurred mask
+        glow_r, glow_g, glow_b, _ = self._color_with_alpha(glow_color, 255)
+        glow_layer = Image.new("RGBA", (glow_width, glow_height), (0, 0, 0, 0))
+        
+        # Create glow color image and apply blurred mask with glow_alpha strength
+        glow_colored = Image.new("RGB", (glow_width, glow_height), (glow_r, glow_g, glow_b))
+        
+        # Create the glow alpha channel by scaling blurred mask with glow_alpha
+        glow_alpha_channel = Image.new("L", (glow_width, glow_height), 0)
+        glow_alpha_data = []
+        for pixel in blurred_mask.getdata():
+            # Scale the blurred mask value to glow_alpha
+            glow_alpha_data.append(int(pixel * glow_alpha / 255))
+        glow_alpha_channel.putdata(glow_alpha_data)
+        
+        # Merge color with alpha channel
+        glow_layer = Image.merge("RGBA", (glow_colored.split()[0], glow_colored.split()[1], glow_colored.split()[2], glow_alpha_channel))
+        
+        # Paste original text on top
+        glow_layer.alpha_composite(text_img, dest=(margin, margin))
+        
+        return glow_layer
 
     def _color_with_alpha(self, color: str, alpha: int) -> tuple[int, int, int, int]:
         """Convert hex color to RGBA tuple with alpha channel."""

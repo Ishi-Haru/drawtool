@@ -93,6 +93,35 @@
           "y": 120,
           "z": 7,
           "font": { "size": 24, "color": "#0000FF", "alpha": 64 }
+        },
+        {
+          "type": "text",
+          "id": "t9",
+          "text": "Red Glow Effect",
+          "x": 80,
+          "y": 160,
+          "z": 8,
+          "font": { 
+            "size": 32, 
+            "color": "#FFFFFF", 
+            "bold": true,
+            "anchor_h": "left",
+            "glow": { "color": "#FF0000", "radius": 15, "alpha": 255 }
+          }
+        },
+        {
+          "type": "text",
+          "id": "t10",
+          "text": "Blue Glow + Rotation",
+          "x": 900,
+          "y": 500,
+          "z": 9,
+          "font": { 
+            "size": 28, 
+            "color": "#FFFF00",
+            "rotation": -30,
+            "glow": { "color": "#0066FF", "radius": 12, "alpha": 200 }
+          }
         }
       ]
     }

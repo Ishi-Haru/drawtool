@@ -20,6 +20,12 @@ class AssetsCfg(TypedDict, total=False):
     base_dir: str
 
 
+class GlowCfg(TypedDict, total=False):
+    color: str
+    radius: int
+    alpha: int
+
+
 class FontCfg(TypedDict, total=False):
     family: str
     size: int
@@ -30,6 +36,7 @@ class FontCfg(TypedDict, total=False):
     anchor_v: Literal["top", "middle", "bottom"]
     anchor_h: Literal["left", "center", "right"]
     rotation: float
+    glow: GlowCfg
 
 
 class BaseElementCfg(TypedDict, total=False):
