@@ -168,11 +168,98 @@ class FigureRenderer:
         size = int(font_cfg.get("size", TextDefaults.FONT_SIZE))
         color = font_cfg.get("color", TextDefaults.FONT_COLOR)
         bold = bool(font_cfg.get("bold", TextDefaults.BOLD))
+        align = font_cfg.get("align", TextDefaults.TEXT_ALIGN)
+        anchor_v = font_cfg.get("anchor_v", TextDefaults.ANCHOR_VERTICAL)
+        anchor_h = font_cfg.get("anchor_h", TextDefaults.ANCHOR_HORIZONTAL)
+        rotation = float(font_cfg.get("rotation", TextDefaults.ROTATION))
 
         # Load TrueType font with specified size and bold setting
         font = self._load_font(size, bold)
 
-        draw.text((x, y), text, fill=color, font=font)
+        # Calculate anchor string for Pillow
+        # Pillow anchor: "la" (left-ascent), "mm" (middle-middle), "rs" (right-baseline), etc.
+        # For text, we use: l/m/r for horizontal, a/s for vertical (ascent/baseline)
+        # For simplicity: top=a, middle=m, bottom=s
+        anchor_map_v = {"top": "a", "middle": "m", "bottom": "s"}
+        anchor_map_h = {"left": "l", "center": "m", "right": "r"}
+        anchor_str = anchor_map_h[anchor_h] + anchor_map_v[anchor_v]
+
+        # For multi-line text, handle alignment
+        if "\n" in text:
+            # Multi-line text with alignment
+            if rotation != 0:
+                # For rotated multi-line text, render to a separate image first
+                temp_img = self._render_text_to_image(text, font, color, align)
+                rotated = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+                
+                # Calculate position based on anchor
+                offset_x, offset_y = self._calculate_anchor_offset(rotated.width, rotated.height, anchor_v, anchor_h)
+                draw._image.alpha_composite(rotated, dest=(x - offset_x, y - offset_y))
+            else:
+                # Non-rotated multi-line text
+                draw.multiline_text((x, y), text, fill=color, font=font, align=align, anchor=anchor_str)
+        else:
+            # Single-line text
+            if rotation != 0:
+                # For rotated text, render to a separate image first
+                temp_img = self._render_text_to_image(text, font, color, "left")
+                rotated = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+                
+                # Calculate position based on anchor
+                offset_x, offset_y = self._calculate_anchor_offset(rotated.width, rotated.height, anchor_v, anchor_h)
+                draw._image.alpha_composite(rotated, dest=(x - offset_x, y - offset_y))
+            else:
+                # Non-rotated single-line text
+                draw.text((x, y), text, fill=color, font=font, anchor=anchor_str)
+
+    def _render_text_to_image(self, text: str, font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+                               color: str, align: str) -> Image.Image:
+        """Render text to a temporary image for rotation."""
+        # Create a dummy draw to calculate text bounding box
+        dummy_img = Image.new("RGBA", (1, 1))
+        dummy_draw = ImageDraw.Draw(dummy_img)
+        
+        # Calculate text bounding box
+        if "\n" in text:
+            bbox = dummy_draw.multiline_textbbox((0, 0), text, font=font, align=align)
+        else:
+            bbox = dummy_draw.textbbox((0, 0), text, font=font)
+        
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # Create temporary image with padding
+        padding = 10
+        temp_img = Image.new("RGBA", (text_width + padding * 2, text_height + padding * 2), (255, 255, 255, 0))
+        temp_draw = ImageDraw.Draw(temp_img)
+        
+        # Draw text at the center of temp image
+        if "\n" in text:
+            temp_draw.multiline_text((padding - bbox[0], padding - bbox[1]), text, fill=color, font=font, align=align)
+        else:
+            temp_draw.text((padding - bbox[0], padding - bbox[1]), text, fill=color, font=font)
+        
+        # Crop to actual text size
+        return temp_img.crop((padding, padding, padding + text_width, padding + text_height))
+
+    def _calculate_anchor_offset(self, width: int, height: int, anchor_v: str, anchor_h: str) -> tuple[int, int]:
+        """Calculate offset based on anchor point."""
+        offset_x = 0
+        offset_y = 0
+        
+        # Horizontal offset
+        if anchor_h == "center":
+            offset_x = width // 2
+        elif anchor_h == "right":
+            offset_x = width
+        
+        # Vertical offset
+        if anchor_v == "middle":
+            offset_y = height // 2
+        elif anchor_v == "bottom":
+            offset_y = height
+        
+        return offset_x, offset_y
 
     def _load_font(self, size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
         """Load a TrueType font with the specified size and bold setting."""

@@ -25,7 +25,7 @@
         {
           "type": "text",
           "id": "t1",
-          "text": "Background Layer",
+          "text": "Left Aligned (Default)",
           "x": 80,
           "y": 60,
           "z": 0,
@@ -34,11 +34,47 @@
         {
           "type": "text",
           "id": "t2",
-          "text": "Bold Text - Top Layer",
-          "x": 380,
+          "text": "Bold - Center Aligned",
+          "x": 600,
           "y": 80,
           "z": 1,
-          "font": { "size": 28, "color": "#FF0000", "bold": true }
+          "font": { "size": 28, "color": "#FF0000", "bold": true, "align": "center", "anchor_h": "center" }
+        },
+        {
+          "type": "text",
+          "id": "t3",
+          "text": "Right Aligned",
+          "x": 1120,
+          "y": 100,
+          "z": 2,
+          "font": { "size": 22, "color": "#0000FF", "align": "right", "anchor_h": "right" }
+        },
+        {
+          "type": "text",
+          "id": "t4",
+          "text": "Rotated 45°",
+          "x": 200,
+          "y": 400,
+          "z": 3,
+          "font": { "size": 26, "color": "#FF00FF", "rotation": -45 }
+        },
+        {
+          "type": "text",
+          "id": "t5",
+          "text": "Center Anchor\n(V: middle, H: center)",
+          "x": 600,
+          "y": 400,
+          "z": 4,
+          "font": { "size": 20, "color": "#008800", "align": "center", "anchor_v": "middle", "anchor_h": "center" }
+        },
+        {
+          "type": "text",
+          "id": "t6",
+          "text": "Bottom Right\nAnchor",
+          "x": 1120,
+          "y": 720,
+          "z": 5,
+          "font": { "size": 18, "color": "#880088", "align": "right", "anchor_v": "bottom", "anchor_h": "right" }
         }
       ]
     }

@@ -25,6 +25,10 @@ class FontCfg(TypedDict, total=False):
     size: int
     color: str
     bold: bool
+    align: Literal["left", "center", "right"]
+    anchor_v: Literal["top", "middle", "bottom"]
+    anchor_h: Literal["left", "center", "right"]
+    rotation: float
 
 
 class BaseElementCfg(TypedDict, total=False):
