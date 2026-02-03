@@ -51,6 +51,10 @@ class ImageElementCfg(BaseElementCfg, total=False):
     type: Literal["image"]
     path: str
     scale: float
+    alpha: int
+    rotation: float
+    anchor_v: Literal["top", "middle", "bottom"]
+    anchor_h: Literal["left", "center", "right"]
 
 
 class TextElementCfg(BaseElementCfg, total=False):

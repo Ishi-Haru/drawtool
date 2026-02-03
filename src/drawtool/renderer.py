@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from drawtool.defaults import TextDefaults
+from drawtool.defaults import TextDefaults, ImageDefaults
 
 
 @dataclass
@@ -151,14 +151,41 @@ class FigureRenderer:
 
         img = Image.open(src_path).convert("RGBA")
 
+        # Get image settings
         scale = float(el.get("scale", 1.0))
+        alpha = int(el.get("alpha", ImageDefaults.ALPHA))
+        rotation = float(el.get("rotation", ImageDefaults.ROTATION))
+        anchor_v = el.get("anchor_v", ImageDefaults.ANCHOR_VERTICAL)
+        anchor_h = el.get("anchor_h", ImageDefaults.ANCHOR_HORIZONTAL)
+
+        # Apply scale
         if scale != 1.0:
             new_w = max(1, int(img.width * scale))
             new_h = max(1, int(img.height * scale))
             img = img.resize((new_w, new_h), resample=Image.Resampling.LANCZOS)
 
+        # Apply alpha if not fully opaque
+        if alpha < 255:
+            # Apply alpha channel multiplication
+            alpha_factor = alpha / 255.0
+            img_data = img.getdata()
+            new_data = []
+            for item in img_data:
+                # item is (R, G, B, A)
+                new_alpha = int(item[3] * alpha_factor)
+                new_data.append((item[0], item[1], item[2], new_alpha))
+            img.putdata(new_data)
+
+        # Apply rotation if specified
+        if rotation != 0:
+            img = img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+
+        # Calculate anchor offset
+        offset_x, offset_y = self._calculate_anchor_offset(img.width, img.height, anchor_v, anchor_h)
+
+        # Composite image at position with anchor offset
         x, y = int(el["x"]), int(el["y"])
-        canvas.alpha_composite(img, dest=(x, y))
+        canvas.alpha_composite(img, dest=(x - offset_x, y - offset_y))
 
     def _draw_text(self, draw: ImageDraw.ImageDraw, el: Dict[str, Any]) -> None:
         x, y = int(el["x"]), int(el["y"])

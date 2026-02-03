@@ -62,3 +62,29 @@ class TextDefaults:
             "anchor_h": cls.ANCHOR_HORIZONTAL,
             "rotation": cls.ROTATION,
         }
+
+
+class ImageDefaults:
+    """Default image rendering settings."""
+
+    # Image alpha/opacity (0-255, 255=opaque, 0=transparent)
+    ALPHA: int = 255
+
+    # Image rotation in degrees (clockwise)
+    ROTATION: float = 0.0
+
+    # Image anchor point - vertical (top, middle, bottom)
+    ANCHOR_VERTICAL: Literal["top", "middle", "bottom"] = "top"
+
+    # Image anchor point - horizontal (left, center, right)
+    ANCHOR_HORIZONTAL: Literal["left", "center", "right"] = "left"
+
+    @classmethod
+    def get_defaults(cls) -> Dict[str, Any]:
+        """Get all image defaults as a dictionary."""
+        return {
+            "alpha": cls.ALPHA,
+            "rotation": cls.ROTATION,
+            "anchor_v": cls.ANCHOR_VERTICAL,
+            "anchor_h": cls.ANCHOR_HORIZONTAL,
+        }

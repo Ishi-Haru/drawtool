@@ -15,7 +15,32 @@
       "id": "middle",
       "order": 10,
       "elements": [
-        { "type": "image", "id": "img2", "path": "sample2.png", "x": 300, "y": 120, "scale": 0.8, "z": 0 }
+        { 
+          "type": "image", 
+          "id": "img2", 
+          "path": "sample2.png", 
+          "x": 300, 
+          "y": 120, 
+          "scale": 0.8, 
+          "z": 0,
+          "alpha": 180,
+          "rotation": 15,
+          "anchor_h": "center",
+          "anchor_v": "middle"
+        },
+        { 
+          "type": "image", 
+          "id": "img3", 
+          "path": "sample1.png", 
+          "x": 900, 
+          "y": 600, 
+          "scale": 0.5, 
+          "z": 1,
+          "alpha": 200,
+          "rotation": -30,
+          "anchor_h": "right",
+          "anchor_v": "bottom"
+        }
       ]
     },
     {
