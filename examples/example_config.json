@@ -75,6 +75,24 @@
           "y": 720,
           "z": 5,
           "font": { "size": 18, "color": "#880088", "align": "right", "anchor_v": "bottom", "anchor_h": "right" }
+        },
+        {
+          "type": "text",
+          "id": "t7",
+          "text": "Semi-transparent (alpha: 128)",
+          "x": 80,
+          "y": 140,
+          "z": 6,
+          "font": { "size": 24, "color": "#FF0000", "alpha": 128 }
+        },
+        {
+          "type": "text",
+          "id": "t8",
+          "text": "Very transparent (alpha: 64)",
+          "x": 80,
+          "y": 120,
+          "z": 7,
+          "font": { "size": 24, "color": "#0000FF", "alpha": 64 }
         }
       ]
     }

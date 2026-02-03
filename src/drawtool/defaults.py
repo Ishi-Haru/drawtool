@@ -13,6 +13,9 @@ class TextDefaults:
     # Text color (hex format)
     FONT_COLOR: str = "#000000"
 
+    # Text alpha/opacity (0-255, 255=opaque, 0=transparent)
+    ALPHA: int = 255
+
     # Bold font (enabled/disabled)
     BOLD: bool = False
 
@@ -51,6 +54,7 @@ class TextDefaults:
         return {
             "size": cls.FONT_SIZE,
             "color": cls.FONT_COLOR,
+            "alpha": cls.ALPHA,
             "family": cls.DEFAULT_FONT_FAMILY,
             "bold": cls.BOLD,
             "align": cls.TEXT_ALIGN,

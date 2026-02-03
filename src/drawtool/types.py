@@ -24,6 +24,7 @@ class FontCfg(TypedDict, total=False):
     family: str
     size: int
     color: str
+    alpha: int
     bold: bool
     align: Literal["left", "center", "right"]
     anchor_v: Literal["top", "middle", "bottom"]

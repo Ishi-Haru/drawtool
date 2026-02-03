@@ -167,53 +167,59 @@ class FigureRenderer:
         font_cfg = el.get("font", {}) if isinstance(el.get("font", {}), dict) else {}
         size = int(font_cfg.get("size", TextDefaults.FONT_SIZE))
         color = font_cfg.get("color", TextDefaults.FONT_COLOR)
+        alpha = int(font_cfg.get("alpha", TextDefaults.ALPHA))
         bold = bool(font_cfg.get("bold", TextDefaults.BOLD))
         align = font_cfg.get("align", TextDefaults.TEXT_ALIGN)
         anchor_v = font_cfg.get("anchor_v", TextDefaults.ANCHOR_VERTICAL)
         anchor_h = font_cfg.get("anchor_h", TextDefaults.ANCHOR_HORIZONTAL)
         rotation = float(font_cfg.get("rotation", TextDefaults.ROTATION))
 
+        # Convert color to RGBA format with alpha
+        rgba_color = self._color_with_alpha(color, alpha)
+
         # Load TrueType font with specified size and bold setting
         font = self._load_font(size, bold)
 
         # Calculate anchor string for Pillow
-        # Pillow anchor: "la" (left-ascent), "mm" (middle-middle), "rs" (right-baseline), etc.
-        # For text, we use: l/m/r for horizontal, a/s for vertical (ascent/baseline)
-        # For simplicity: top=a, middle=m, bottom=s
         anchor_map_v = {"top": "a", "middle": "m", "bottom": "s"}
         anchor_map_h = {"left": "l", "center": "m", "right": "r"}
         anchor_str = anchor_map_h[anchor_h] + anchor_map_v[anchor_v]
 
+        # If alpha is not fully opaque or rotation is used, render to temp image first
+        needs_compositing = alpha < 255 or rotation != 0
+
         # For multi-line text, handle alignment
         if "\n" in text:
             # Multi-line text with alignment
-            if rotation != 0:
-                # For rotated multi-line text, render to a separate image first
-                temp_img = self._render_text_to_image(text, font, color, align)
-                rotated = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+            if needs_compositing:
+                # Render to a separate image first for alpha or rotation
+                temp_img = self._render_text_to_image(text, font, rgba_color, align)
+                if rotation != 0:
+                    temp_img = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
                 
                 # Calculate position based on anchor
-                offset_x, offset_y = self._calculate_anchor_offset(rotated.width, rotated.height, anchor_v, anchor_h)
-                draw._image.alpha_composite(rotated, dest=(x - offset_x, y - offset_y))
+                offset_x, offset_y = self._calculate_anchor_offset(temp_img.width, temp_img.height, anchor_v, anchor_h)
+                draw._image.alpha_composite(temp_img, dest=(x - offset_x, y - offset_y))
             else:
-                # Non-rotated multi-line text
-                draw.multiline_text((x, y), text, fill=color, font=font, align=align, anchor=anchor_str)
+                # Non-rotated fully opaque multi-line text - direct draw
+                draw.multiline_text((x, y), text, fill=rgba_color, font=font, align=align, anchor=anchor_str)
         else:
             # Single-line text
-            if rotation != 0:
-                # For rotated text, render to a separate image first
-                temp_img = self._render_text_to_image(text, font, color, "left")
-                rotated = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+            if needs_compositing:
+                # Render to a separate image first for alpha or rotation
+                temp_img = self._render_text_to_image(text, font, rgba_color, "left")
+                if rotation != 0:
+                    temp_img = temp_img.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
                 
                 # Calculate position based on anchor
-                offset_x, offset_y = self._calculate_anchor_offset(rotated.width, rotated.height, anchor_v, anchor_h)
-                draw._image.alpha_composite(rotated, dest=(x - offset_x, y - offset_y))
+                offset_x, offset_y = self._calculate_anchor_offset(temp_img.width, temp_img.height, anchor_v, anchor_h)
+                draw._image.alpha_composite(temp_img, dest=(x - offset_x, y - offset_y))
             else:
-                # Non-rotated single-line text
-                draw.text((x, y), text, fill=color, font=font, anchor=anchor_str)
+                # Non-rotated fully opaque single-line text - direct draw
+                draw.text((x, y), text, fill=rgba_color, font=font, anchor=anchor_str)
 
     def _render_text_to_image(self, text: str, font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
-                               color: str, align: str) -> Image.Image:
+                               color: tuple[int, int, int, int], align: str) -> Image.Image:
         """Render text to a temporary image for rotation."""
         # Create a dummy draw to calculate text bounding box
         dummy_img = Image.new("RGBA", (1, 1))
@@ -241,6 +247,30 @@ class FigureRenderer:
         
         # Crop to actual text size
         return temp_img.crop((padding, padding, padding + text_width, padding + text_height))
+
+    def _color_with_alpha(self, color: str, alpha: int) -> tuple[int, int, int, int]:
+        """Convert hex color to RGBA tuple with alpha channel."""
+        # Remove '#' if present
+        if color.startswith('#'):
+            color = color[1:]
+        
+        # Parse RGB values
+        if len(color) == 6:
+            r = int(color[0:2], 16)
+            g = int(color[2:4], 16)
+            b = int(color[4:6], 16)
+        elif len(color) == 3:
+            r = int(color[0] * 2, 16)
+            g = int(color[1] * 2, 16)
+            b = int(color[2] * 2, 16)
+        else:
+            # Fallback to black if invalid format
+            r, g, b = 0, 0, 0
+        
+        # Clamp alpha to 0-255 range
+        alpha = max(0, min(255, alpha))
+        
+        return (r, g, b, alpha)
 
     def _calculate_anchor_offset(self, width: int, height: int, anchor_v: str, anchor_h: str) -> tuple[int, int]:
         """Calculate offset based on anchor point."""
