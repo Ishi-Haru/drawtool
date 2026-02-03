@@ -1,0 +1,46 @@
+{
+  "version": "0.1",
+  "output": { "path": "build/example.png" },
+  "canvas": { "width": 1200, "height": 800, "background": "#FFFFFF" },
+  "assets": { "base_dir": "../assets" },
+  "layers": [
+    {
+      "id": "background",
+      "order": 0,
+      "elements": [
+        { "type": "image", "id": "img1", "path": "sample1.png", "x": 50, "y": 100, "scale": 1.0, "z": 0 }
+      ]
+    },
+    {
+      "id": "middle",
+      "order": 10,
+      "elements": [
+        { "type": "image", "id": "img2", "path": "sample2.png", "x": 300, "y": 120, "scale": 0.8, "z": 0 }
+      ]
+    },
+    {
+      "id": "text",
+      "order": 20,
+      "elements": [
+        {
+          "type": "text",
+          "id": "t1",
+          "text": "Background Layer",
+          "x": 80,
+          "y": 60,
+          "z": 0,
+          "font": { "size": 24, "color": "#333333" }
+        },
+        {
+          "type": "text",
+          "id": "t2",
+          "text": "Bold Text - Top Layer",
+          "x": 380,
+          "y": 80,
+          "z": 1,
+          "font": { "size": 28, "color": "#FF0000", "bold": true }
+        }
+      ]
+    }
+  ]
+}
